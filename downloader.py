@@ -169,6 +169,7 @@ if __name__ == "__main__":
         courses = download_courses()
         with open(courses_file, "wb") as f:
             pickle.dump(courses, f)
+        courses_dict = {x.abbrv: x for x in courses}
 
     # Load specializations
     if os.path.exists(specializations_file):
@@ -179,4 +180,4 @@ if __name__ == "__main__":
         specs = download_specializations()
         with open(specializations_file, "wb") as f:
             pickle.dump(specs, f)
-
+        spec_dict = {x.abbrv: x for x in specs}
