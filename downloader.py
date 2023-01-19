@@ -99,6 +99,16 @@ class FITCourseGuide:
         print("\nWith selected courses:")
         self.print_semesters(spec_required)
 
+    def overview_of_specs(self):
+        for spec in self.specs:
+            self.selected_spec = spec
+            print(f"\n{'#' * 70}\n\n"
+                  f"{bcolors.HEADER}{self.selected_spec.abbrv}, "
+                  f"{self.selected_spec.name}{bcolors.ENDC}\n"
+                  f"{self.selected_spec.garant}\n\n"
+                  f"Required courses:")
+            self.print_semesters(self.selected_spec.req)
+
     def generate_matrix(self):
         req_all = set()
         for spec in self.specs:
@@ -302,3 +312,4 @@ if __name__ == "__main__":
                           ["VYF", "PP1", "KNN", "ZPO", "VGE"],
                           ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN", "GAL"],
                           ["MTIa"]])
+    guide.overview_of_specs()
