@@ -161,32 +161,35 @@ class FITCourseGuide:
         if os.path.exists(courses_file):
             with open(courses_file, "rb") as f:
                 self.courses = pickle.load(f)
-            self.courses_dict = {x.abbrv: x for x in self.courses}
         else:
             self.courses = download_courses()
             with open(courses_file, "wb") as f:
                 pickle.dump(self.courses, f)
-            self.courses_dict = {x.abbrv: x for x in self.courses}
 
         # Load specializations
         if os.path.exists(specializations_file):
             with open(specializations_file, "rb") as f:
                 self.specs = pickle.load(f)
-            self.spec_dict = {x.abbrv: x for x in self.specs}
         else:
             self.specs = download_specializations()
             with open(specializations_file, "wb") as f:
                 pickle.dump(self.specs, f)
-            self.spec_dict = {x.abbrv: x for x in self.specs}
 
-        # TODO after rerun
+        self.courses_dict = {}
         for course in self.courses:
-            course.credits = int(course.credits)
+            if course.abbrv not in self.courses_dict:
+                self.courses_dict[course.abbrv] = course
+            else:
+                self.courses_dict[f"{course.abbrv}{self.courses_dict[course.abbrv].semester.lower()}"] = self.courses_dict[course.abbrv]
+                del self.courses_dict[course.abbrv]
+                self.courses_dict[f"{course.abbrv}{course.semester.lower()}"] = course
+
+        self.spec_dict = {x.abbrv: x for x in self.specs}
 
     def help_me_decide(self, spec_name):
         self.selected_spec = self.spec_dict[spec_name]
         spec_required = copy(self.selected_spec.req)
-        selected_courses = [["FCE", "FIT"], ["VYF", "PP1"], [], []]
+        selected_courses = [["FCE", "FITw"], ["VYF", "PP1"], [], []]
 
         print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
               f"{self.selected_spec.garant}\n\n"
@@ -222,16 +225,18 @@ class FITCourseGuide:
         with open("matrix.csv", "w") as f:
             f.write(out)
 
-    def color_print_course(self, selected_courses):
+    def course_print_check(self, selected_courses, semester):
         out = ""
         for course in selected_courses:
+            if self.courses_dict[course].semester != semester:
+                return f"{bcolors.FAIL}Course {course} in wrong semester (W/S){bcolors.ENDC}"
             if course in self.selected_spec.req_all:
                 out += f"{bcolors.WARNING}{course}{bcolors.ENDC}, "
             else:
                 out += f"{course}, "
         return out
 
-    def color_total_credits(self, total_credits, hint=""):
+    def print_color_credits(self, total_credits, hint=""):
         if total_credits < 120:
             print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
         else:
@@ -253,24 +258,25 @@ class FITCourseGuide:
 
             all_selected.update(selected_courses[x])
 
-            print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. {self.color_print_course(selected_courses[x])}")
+            print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. "
+                  f"{self.course_print_check(selected_courses[x], idf)}")
 
-        self.color_total_credits(total_credits)
+        self.print_color_credits(total_credits)
 
         remaining = self.selected_spec.req_all - all_selected
         print(f"Remaining required: {len(remaining)}")
         if len(remaining) > 0:
             winter_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[0]])
             print(f"W: {winter_sum_rem}"
-                  f" cr. {self.color_print_course(self.selected_spec.req_any[0])}")
+                  f" cr. {self.course_print_check(self.selected_spec.req_any[0], 'W')}")
 
             summer_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[1]])
             print(
                 f"S: {summer_sum_rem}"
-                f" cr. {self.color_print_course(self.selected_spec.req_any[1])}")
+                f" cr. {self.course_print_check(self.selected_spec.req_any[1], 'S')}")
 
             sum_rem = winter_sum_rem + summer_sum_rem
-            self.color_total_credits(sum_rem+total_credits, f"({sum_rem}+{total_credits})")
+            self.print_color_credits(sum_rem + total_credits, f"({sum_rem}+{total_credits})")
 
 
 if __name__ == "__main__":
