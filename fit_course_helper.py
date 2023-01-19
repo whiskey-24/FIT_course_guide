@@ -308,4 +308,4 @@ if __name__ == "__main__":
                           ["VYF", "PP1", "KNN", "ZPO", "VGE"],
                           ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN", "GAL"],
                           ["MTIa"]])
-    guide.overview_of_specs()
+    # guide.overview_of_specs()
