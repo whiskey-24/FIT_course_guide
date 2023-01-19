@@ -87,7 +87,7 @@ class FITCourseGuide:
 
     def help_me_decide(self, spec_name, selected_courses):
         self.selected_spec = self.spec_dict[spec_name]
-        spec_required = copy(self.selected_spec.req)
+        spec_required = deepcopy(self.selected_spec.req)
 
         print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
               f"{self.selected_spec.garant}\n\n"
