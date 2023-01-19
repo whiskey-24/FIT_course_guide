@@ -47,6 +47,7 @@ class bcolors:
     ENDC = '\033[0m'
     RED = "\033[31m"
     GREEN = "\033[32m"
+    WHITE = "\033[00m"
 
 
 class FITCourseGuide:
@@ -127,10 +128,17 @@ class FITCourseGuide:
         for course in selected_courses:
             if self.courses_dict[course].semester != semester:
                 return f"{bcolors.FAIL}Course {course} in wrong semester (W/S){bcolors.ENDC}"
+            curr = ""
             if course in self.selected_spec.req_all:
-                out += f"{bcolors.WARNING}{course}{bcolors.ENDC}, "
+                curr += f"{bcolors.WARNING}"
             else:
-                out += f"{course}, "
+                curr += f"{bcolors.WHITE}"
+            curr += f"{course}{bcolors.OKBLUE}({self.courses_dict[course].finals})" \
+                    f"{bcolors.ENDC}, "
+            # print("len1 ", len(curr), curr)
+            curr = curr.ljust(25)
+            # print("len2 ", len(curr))
+            out += curr
         return out
 
     def print_semesters(self, selected_courses):
@@ -291,6 +299,6 @@ if __name__ == "__main__":
 
     guide.help_me_decide("NVIZ",
                          [["FCE", "FITw"],
-                          ["VYF", "PP1"],
-                          ["GZN", "PGR", "POVa"],
-                          []])
+                          ["VYF", "PP1", "KNN", "ZPO", "VGE"],
+                          ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN", "GAL"],
+                          ["MTIa"]])
