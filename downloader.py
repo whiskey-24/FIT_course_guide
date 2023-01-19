@@ -52,7 +52,12 @@ def download_courses():
         course.link = cells[0].find("a")["href"]
         course.name = cells[0].text
         course.abbrv = cells[1].text
-        course.semester = cells[2].text
+
+        if cells[2].text == "L":
+            course.semester = "S"
+        else:
+            course.semester = "W"
+
         course.credits = int(cells[3].text)
         course.finals = cells[4].text
         course.dept = cells[5].text
@@ -133,6 +138,7 @@ def download_specializations():
 
     return specializations
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -145,6 +151,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
     RED = "\033[31m"
     GREEN = "\033[32m"
+
 
 class FITCourseGuide:
 
