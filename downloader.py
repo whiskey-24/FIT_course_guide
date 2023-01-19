@@ -137,6 +137,31 @@ def download_specializations():
     return specializations
 
 
+def generate_matrix(specs):
+    req_all = set()
+    for spec in specs:
+        req_all.update(spec.req_all)
+
+    out = "Spec\Course,"
+    for req in req_all:
+        out += f"{req},"
+    out = out[:-1]
+    out += "\n"
+    for idx, spec in enumerate(specs):
+        out += f"{spec.abbrv},"
+        for req in req_all:
+            if req in spec.req_all:
+                out += "1,"
+            else:
+                out += "0,"
+
+        out = out[:-1]
+        out += "\n"
+
+    with open("matrix.csv", "w") as f:
+        f.write(out)
+
+
 if __name__ == "__main__":
     courses_file = "courses.pkl"
     specializations_file = "specializations.pkl"
