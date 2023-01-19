@@ -1,4 +1,6 @@
 import sys
+from copy import copy
+
 import numpy as np
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
@@ -131,6 +133,18 @@ def download_specializations():
 
     return specializations
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    RED = "\033[31m"
+    GREEN = "\033[32m"
 
 class FITCourseGuide:
 
@@ -163,12 +177,19 @@ class FITCourseGuide:
             course.credits = int(course.credits)
 
     def help_me_decide(self, spec_name):
-        selected_courses = ["FCE", "FIT"]
         self.selected_spec = self.spec_dict[spec_name]
+        spec_required = copy(self.selected_spec.req)
+        selected_courses = [["FCE", "FIT"], ["VYF", "PP1"], [], []]
 
         print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
-              f"{self.selected_spec.garant}\n")
-        self.print_semesters(self.selected_spec.req)
+              f"{self.selected_spec.garant}\n\n"
+              f"Only required courses:")
+        self.print_semesters(spec_required)
+
+        for idx, sem in enumerate(spec_required):
+            sem.extend(selected_courses[idx])
+        print("\nWith selected courses:")
+        self.print_semesters(spec_required)
 
     def generate_matrix(self):
         req_all = set()
@@ -194,22 +215,58 @@ class FITCourseGuide:
         with open("matrix.csv", "w") as f:
             f.write(out)
 
-    def color_print_course(self):
+    def color_print_course(self, selected_courses):
+        out = ""
+        for course in selected_courses:
+            if course in self.selected_spec.req_all:
+                out += f"{bcolors.WARNING}{course}{bcolors.ENDC}, "
+            else:
+                out += f"{course}, "
+        return out
+
+    def color_total_credits(self, total_credits, hint=""):
+        if total_credits < 120:
+            print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
+        else:
+            print(f"{bcolors.GREEN}{hint}{total_credits}{bcolors.ENDC}", end="")
+        print("/120 cr.")
+
     def print_semesters(self, selected_courses):
         total_credits = 0
+        all_selected = set()
         for x in range(4):
             if x % 2 == 0:
                 idf = "W"
             else:
                 idf = "S"
+
             sem_credits = sum(
-                [self.courses_dict[x].credits for x in selected_courses[x]])
+                [self.courses_dict[y].credits for y in selected_courses[x]])
             total_credits += sem_credits
-            print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. {selected_courses[x]}")
-        print(f"{total_credits}/120 cr.")
+
+            all_selected.update(selected_courses[x])
+
+            print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. {self.color_print_course(selected_courses[x])}")
+
+        self.color_total_credits(total_credits)
+
+        remaining = self.selected_spec.req_all - all_selected
+        print(f"Remaining required: {len(remaining)}")
+        if len(remaining) > 0:
+            winter_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[0]])
+            print(f"W: {winter_sum_rem}"
+                  f" cr. {self.color_print_course(self.selected_spec.req_any[0])}")
+
+            summer_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[1]])
+            print(
+                f"S: {summer_sum_rem}"
+                f" cr. {self.color_print_course(self.selected_spec.req_any[1])}")
+
+            sum_rem = winter_sum_rem + summer_sum_rem
+            self.color_total_credits(sum_rem+total_credits, f"({sum_rem}+{total_credits})")
 
 
 if __name__ == "__main__":
-    FITCourseGuide("courses.pkl", "specializations.pkl")
+    guide = FITCourseGuide("courses.pkl", "specializations.pkl")
 
-    FITCourseGuide.help_me_decide("NVIZ")
+    guide.help_me_decide("NVIZ")
