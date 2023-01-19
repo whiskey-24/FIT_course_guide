@@ -51,13 +51,14 @@ def download_courses():
         course.name = cells[0].text
         course.abbrv = cells[1].text
         course.semester = cells[2].text
-        course.credits = cells[3].text
+        course.credits = int(cells[3].text)
         course.finals = cells[4].text
         course.dept = cells[5].text
 
         courses.append(course)
 
     for course in courses:
+        print("Downloading:", course.abbrv)
         page = urlopen(course.link)
         html = page.read().decode("utf-8")
         soup = BeautifulSoup(html, "html.parser")
@@ -109,7 +110,7 @@ def download_specializations():
         specializations.append(spec)
 
     for spec in specializations:
-        print(spec.abbrv)
+        print("Downloading:", spec.abbrv)
         page = urlopen(spec.link)
         html = page.read().decode("utf-8")
         soup = BeautifulSoup(html, "html.parser")
@@ -131,53 +132,84 @@ def download_specializations():
     return specializations
 
 
-def generate_matrix(specs):
-    req_all = set()
-    for spec in specs:
-        req_all.update(spec.req_all)
+class FITCourseGuide:
 
-    out = "Spec\Course,"
-    for req in req_all:
-        out += f"{req},"
-    out = out[:-1]
-    out += "\n"
-    for idx, spec in enumerate(specs):
-        out += f"{spec.abbrv},"
+    def __init__(self, courses_file, specializations_file):
+
+        # Load courses
+        if os.path.exists(courses_file):
+            with open(courses_file, "rb") as f:
+                self.courses = pickle.load(f)
+            self.courses_dict = {x.abbrv: x for x in self.courses}
+        else:
+            self.courses = download_courses()
+            with open(courses_file, "wb") as f:
+                pickle.dump(self.courses, f)
+            self.courses_dict = {x.abbrv: x for x in self.courses}
+
+        # Load specializations
+        if os.path.exists(specializations_file):
+            with open(specializations_file, "rb") as f:
+                self.specs = pickle.load(f)
+            self.spec_dict = {x.abbrv: x for x in self.specs}
+        else:
+            self.specs = download_specializations()
+            with open(specializations_file, "wb") as f:
+                pickle.dump(self.specs, f)
+            self.spec_dict = {x.abbrv: x for x in self.specs}
+
+        # TODO after rerun
+        for course in self.courses:
+            course.credits = int(course.credits)
+
+    def help_me_decide(self, spec_name):
+        selected_courses = ["FCE", "FIT"]
+        self.selected_spec = self.spec_dict[spec_name]
+
+        print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
+              f"{self.selected_spec.garant}\n")
+        self.print_semesters(self.selected_spec.req)
+
+    def generate_matrix(self):
+        req_all = set()
+        for spec in self.specs:
+            req_all.update(spec.req_all)
+
+        out = "Spec\Course,"
         for req in req_all:
-            if req in spec.req_all:
-                out += "1,"
-            else:
-                out += "0,"
-
+            out += f"{req},"
         out = out[:-1]
         out += "\n"
+        for idx, spec in enumerate(self.specs):
+            out += f"{spec.abbrv},"
+            for req in req_all:
+                if req in spec.req_all:
+                    out += "1,"
+                else:
+                    out += "0,"
 
-    with open("matrix.csv", "w") as f:
-        f.write(out)
+            out = out[:-1]
+            out += "\n"
+
+        with open("matrix.csv", "w") as f:
+            f.write(out)
+
+    def color_print_course(self):
+    def print_semesters(self, selected_courses):
+        total_credits = 0
+        for x in range(4):
+            if x % 2 == 0:
+                idf = "W"
+            else:
+                idf = "S"
+            sem_credits = sum(
+                [self.courses_dict[x].credits for x in selected_courses[x]])
+            total_credits += sem_credits
+            print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. {selected_courses[x]}")
+        print(f"{total_credits}/120 cr.")
 
 
 if __name__ == "__main__":
-    courses_file = "courses.pkl"
-    specializations_file = "specializations.pkl"
+    FITCourseGuide("courses.pkl", "specializations.pkl")
 
-    # Load courses
-    if os.path.exists(courses_file):
-        with open(courses_file, "rb") as f:
-            courses = pickle.load(f)
-        courses_dict = {x.abbrv: x for x in courses}
-    else:
-        courses = download_courses()
-        with open(courses_file, "wb") as f:
-            pickle.dump(courses, f)
-        courses_dict = {x.abbrv: x for x in courses}
-
-    # Load specializations
-    if os.path.exists(specializations_file):
-        with open(specializations_file, "rb") as f:
-            specs = pickle.load(f)
-        spec_dict = {x.abbrv: x for x in specs}
-    else:
-        specs = download_specializations()
-        with open(specializations_file, "wb") as f:
-            pickle.dump(specs, f)
-        spec_dict = {x.abbrv: x for x in specs}
+    FITCourseGuide.help_me_decide("NVIZ")
