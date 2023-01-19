@@ -1,14 +1,10 @@
-import sys
-from copy import copy
-
-import numpy as np
+from copy import deepcopy
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import pickle
 import os
-from pprint import pprint
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import Dict
 from collections import defaultdict
 
 
@@ -137,17 +133,17 @@ class FITCourseGuide:
         out = ""
         for course in selected_courses:
             if self.courses_dict[course].semester != semester:
-                return f"{bcolors.FAIL}Course {course} in wrong semester (W/S){bcolors.ENDC}"
+                return f"{bcolors.FAIL}Course {course} in wrong semester " \
+                       f"(W/S){bcolors.ENDC}"
             curr = ""
             if course in self.selected_spec.req_all:
                 curr += f"{bcolors.WARNING}"
             else:
                 curr += f"{bcolors.WHITE}"
-            curr += f"{course}{bcolors.OKBLUE}({self.courses_dict[course].finals})" \
+            curr += f"{course}{bcolors.OKBLUE}" \
+                    f"({self.courses_dict[course].finals})" \
                     f"{bcolors.ENDC}, "
-            # print("len1 ", len(curr), curr)
             curr = curr.ljust(25)
-            # print("len2 ", len(curr))
             out += curr
         return out
 
