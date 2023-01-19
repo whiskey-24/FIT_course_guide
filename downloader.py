@@ -153,7 +153,17 @@ class bcolors:
     GREEN = "\033[32m"
 
 
+def print_color_credits(total_credits, hint=""):
+    if total_credits < 120:
+        print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
+    else:
+        print(f"{bcolors.GREEN}{hint}{total_credits}{bcolors.ENDC}", end="")
+    print("/120 cr.")
+
+
 class FITCourseGuide:
+    W = 0  # Winter semester
+    S = 1  # Summer semester
 
     def __init__(self, courses_file, specializations_file):
 
@@ -186,10 +196,9 @@ class FITCourseGuide:
 
         self.spec_dict = {x.abbrv: x for x in self.specs}
 
-    def help_me_decide(self, spec_name):
+    def help_me_decide(self, spec_name, selected_courses):
         self.selected_spec = self.spec_dict[spec_name]
         spec_required = copy(self.selected_spec.req)
-        selected_courses = [["FCE", "FITw"], ["VYF", "PP1"], [], []]
 
         print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
               f"{self.selected_spec.garant}\n\n"
@@ -236,13 +245,6 @@ class FITCourseGuide:
                 out += f"{course}, "
         return out
 
-    def print_color_credits(self, total_credits, hint=""):
-        if total_credits < 120:
-            print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
-        else:
-            print(f"{bcolors.GREEN}{hint}{total_credits}{bcolors.ENDC}", end="")
-        print("/120 cr.")
-
     def print_semesters(self, selected_courses):
         total_credits = 0
         all_selected = set()
@@ -261,25 +263,28 @@ class FITCourseGuide:
             print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. "
                   f"{self.course_print_check(selected_courses[x], idf)}")
 
-        self.print_color_credits(total_credits)
+        print_color_credits(total_credits)
 
         remaining = self.selected_spec.req_all - all_selected
         print(f"Remaining required: {len(remaining)}")
         if len(remaining) > 0:
-            winter_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[0]])
-            print(f"W: {winter_sum_rem}"
-                  f" cr. {self.course_print_check(self.selected_spec.req_any[0], 'W')}")
+            winter_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[self.W]])
+            print(f"W: {winter_sum_rem} cr. "
+                  f"{self.course_print_check(self.selected_spec.req_any[0], 'W')}")
 
-            summer_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[1]])
-            print(
-                f"S: {summer_sum_rem}"
-                f" cr. {self.course_print_check(self.selected_spec.req_any[1], 'S')}")
+            summer_sum_rem = sum([self.courses_dict[x].credits for x in self.selected_spec.req_any[self.S]])
+            print(f"S: {summer_sum_rem} cr. "
+                  f"{self.course_print_check(self.selected_spec.req_any[1], 'S')}")
 
             sum_rem = winter_sum_rem + summer_sum_rem
-            self.print_color_credits(sum_rem + total_credits, f"({sum_rem}+{total_credits})")
+            print_color_credits(sum_rem + total_credits, f"({sum_rem}+{total_credits})")
 
 
 if __name__ == "__main__":
     guide = FITCourseGuide("courses.pkl", "specializations.pkl")
 
-    guide.help_me_decide("NVIZ")
+    guide.help_me_decide("NVIZ",
+                         [["FCE", "FITw"],
+                          ["VYF", "PP1"],
+                          [],
+                          []])
