@@ -24,6 +24,17 @@ class Course:
     points_dist: Dict = field(default_factory=lambda: defaultdict(dict))
 
 
+@dataclass
+class Spec:
+    abbrv: str = ""
+    link: str = ""
+    name: str = ""
+    garant: str = ""
+    req: list[list[str]] = field(default_factory=list)
+    req_any: list[list[str]] = field(default_factory=list)
+    req_all: set = field(default_factory=set)
+
+
 def download_courses():
     page = urlopen("https://www.fit.vut.cz/study/courses/.cs?year=2022&type=NMgr")
     html = page.read().decode("utf-8")
@@ -71,6 +82,61 @@ def download_courses():
     return courses
 
 
+def get_all_required(all_tr):
+    required = []
+    for row in all_tr:
+        cells = row.find_all("td")
+        if cells[2].text == "P":
+            required.append(row.find_all("th")[0].text)
+    return required
+
+
+def download_specializations():
+    page = urlopen("https://www.fit.vut.cz/study/program/7887/.cs")
+    html = page.read().decode("utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    main = soup.find("main")
+
+    specializations = []
+    spec_rows = main.find("div", {"class": "table-responsive__holder"}).find("tbody").find_all("tr")
+    for row in spec_rows:
+        cells = row.find_all("td")
+
+        spec = Spec()
+        spec.link = cells[0].find("a")["href"]
+        spec.name = cells[0].text
+        spec.abbrv = cells[1].text
+        specializations.append(spec)
+
+    # with open("links.pkl", "wb") as f:
+    #     pickle.dump(specializations, f)
+    #
+    # with open("links.pkl", "rb") as f:
+    #     specializations = pickle.load(f)
+
+    for spec in specializations:
+        print(spec.abbrv)
+        page = urlopen(spec.link)
+        html = page.read().decode("utf-8")
+        soup = BeautifulSoup(html, "html.parser")
+
+        spec.garant = soup.find("div", text=lambda
+            t: t and "Garant" in t).parent.find_next_sibling("div").find(
+            "a").text.strip()
+
+        tables = soup.find("div", {"class": "table-responsive__holder"}).findChildren("table")
+        for x in range(4):
+            courses = get_all_required(tables[x].find("tbody").find_all("tr"))
+            spec.req.append(courses)
+            spec.req_all.update(courses)
+        for x in range(2):
+            courses = get_all_required(tables[4+x].find("tbody").find_all("tr"))
+            spec.req_any.append(courses)
+            spec.req_all.update(courses)
+
+    return specializations
+
+
 if __name__ == "__main__":
     courses_file = "courses.pkl"
     specializations_file = "specializations.pkl"
@@ -85,4 +151,13 @@ if __name__ == "__main__":
         with open(courses_file, "wb") as f:
             pickle.dump(courses, f)
 
+    # Load specializations
+    if os.path.exists(specializations_file):
+        with open(specializations_file, "rb") as f:
+            specs = pickle.load(f)
+        spec_dict = {x.abbrv: x for x in specs}
+    else:
+        specs = download_specializations()
+        with open(specializations_file, "wb") as f:
+            pickle.dump(specs, f)
 
