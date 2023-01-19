@@ -37,128 +37,16 @@ class Spec:
     req_all: set = field(default_factory=set)
 
 
-def download_courses():
-    page = urlopen("https://www.fit.vut.cz/study/courses/.cs?year=2022&type=NMgr")
-    html = page.read().decode("utf-8")
-    soup = BeautifulSoup(html, "html.parser")
-    main = soup.find("main")
-
-    courses = []
-    course_rows = main.find("table", {"id": "list"}).find("tbody").find_all("tr")
-    for row in course_rows:
-        cells = row.find_all("td")
-
-        course = Course()
-        course.link = cells[0].find("a")["href"]
-        course.name = cells[0].text
-        course.abbrv = cells[1].text
-
-        if cells[2].text == "L":
-            course.semester = "S"
-        else:
-            course.semester = "W"
-
-        course.credits = int(cells[3].text)
-        course.finals = cells[4].text
-        course.dept = cells[5].text
-
-        courses.append(course)
-
-    for course in courses:
-        print("Downloading:", course.abbrv)
-        page = urlopen(course.link)
-        html = page.read().decode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-
-        course.garant = soup.find("p", text=lambda t: t and "Garant" in t).parent.find_next_sibling("div").find("div").text.strip()
-
-        try:
-            hours = soup.find("p", text=lambda t: t and "Rozsah" in t).parent.find_next_sibling("div").find("div").text.strip()
-            for co in hours.split(","):
-                course.number_of_hours[co.strip()[8:]] = int(co.strip().split(" ")[0])
-        except AttributeError:
-            print(f"{course.abbrv} don't have hours")
-
-        try:
-            points = soup.find("p", text=lambda t: t and "Bodov" in t).parent.find_next_sibling("div").find("div").text.strip()
-            for co in points.split(","):
-                splitted = co.strip().split(" ")
-                course.points_dist[" ".join(splitted[2:])] = int(splitted[0])
-        except AttributeError:
-            print(f"{course.abbrv} don't have bodove hodnotenie")
-
-    return courses
-
-
-def get_all_required(all_tr):
-    required = []
-    for row in all_tr:
-        cells = row.find_all("td")
-        if cells[2].text == "P":
-            required.append(row.find_all("th")[0].text)
-    return required
-
-
-def download_specializations():
-    page = urlopen("https://www.fit.vut.cz/study/program/7887/.cs")
-    html = page.read().decode("utf-8")
-    soup = BeautifulSoup(html, "html.parser")
-    main = soup.find("main")
-
-    specializations = []
-    spec_rows = main.find("div", {"class": "table-responsive__holder"}).find("tbody").find_all("tr")
-    for row in spec_rows:
-        cells = row.find_all("td")
-
-        spec = Spec()
-        spec.link = cells[0].find("a")["href"]
-        spec.name = cells[0].text
-        spec.abbrv = cells[1].text
-        specializations.append(spec)
-
-    for spec in specializations:
-        print("Downloading:", spec.abbrv)
-        page = urlopen(spec.link)
-        html = page.read().decode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-
-        spec.garant = soup.find("div", text=lambda
-            t: t and "Garant" in t).parent.find_next_sibling("div").find(
-            "a").text.strip()
-
-        tables = soup.find("div", {"class": "table-responsive__holder"}).findChildren("table")
-        for x in range(4):
-            courses = get_all_required(tables[x].find("tbody").find_all("tr"))
-            spec.req.append(courses)
-            spec.req_all.update(courses)
-        for x in range(2):
-            courses = get_all_required(tables[4+x].find("tbody").find_all("tr"))
-            spec.req_any.append(courses)
-            spec.req_all.update(courses)
-
-    return specializations
-
-
+# Source https://svn.blender.org/svnroot/bf-blender/trunk/blender/build_files/scons/tools/bcolors.py
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
     RED = "\033[31m"
     GREEN = "\033[32m"
-
-
-def print_color_credits(total_credits, hint=""):
-    if total_credits < 120:
-        print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
-    else:
-        print(f"{bcolors.GREEN}{hint}{total_credits}{bcolors.ENDC}", end="")
-    print("/120 cr.")
 
 
 class FITCourseGuide:
@@ -278,6 +166,116 @@ class FITCourseGuide:
 
             sum_rem = winter_sum_rem + summer_sum_rem
             print_color_credits(sum_rem + total_credits, f"({sum_rem}+{total_credits})")
+
+
+def download_courses():
+    page = urlopen("https://www.fit.vut.cz/study/courses/.cs?year=2022&type=NMgr")
+    html = page.read().decode("utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    main = soup.find("main")
+
+    courses = []
+    course_rows = main.find("table", {"id": "list"}).find("tbody").find_all("tr")
+    for row in course_rows:
+        cells = row.find_all("td")
+
+        course = Course()
+        course.link = cells[0].find("a")["href"]
+        course.name = cells[0].text
+        course.abbrv = cells[1].text
+
+        if cells[2].text == "L":
+            course.semester = "S"
+        else:
+            course.semester = "W"
+
+        course.credits = int(cells[3].text)
+        course.finals = cells[4].text
+        course.dept = cells[5].text
+
+        courses.append(course)
+
+    for course in courses:
+        print("Downloading:", course.abbrv)
+        page = urlopen(course.link)
+        html = page.read().decode("utf-8")
+        soup = BeautifulSoup(html, "html.parser")
+
+        course.garant = soup.find("p", text=lambda t: t and "Garant" in t).parent.find_next_sibling("div").find("div").text.strip()
+
+        try:
+            hours = soup.find("p", text=lambda t: t and "Rozsah" in t).parent.find_next_sibling("div").find("div").text.strip()
+            for co in hours.split(","):
+                course.number_of_hours[co.strip()[8:]] = int(co.strip().split(" ")[0])
+        except AttributeError:
+            print(f"{course.abbrv} don't have hours")
+
+        try:
+            points = soup.find("p", text=lambda t: t and "Bodov" in t).parent.find_next_sibling("div").find("div").text.strip()
+            for co in points.split(","):
+                splitted = co.strip().split(" ")
+                course.points_dist[" ".join(splitted[2:])] = int(splitted[0])
+        except AttributeError:
+            print(f"{course.abbrv} don't have bodove hodnotenie")
+
+    return courses
+
+
+def get_all_required(all_tr):
+    required = []
+    for row in all_tr:
+        cells = row.find_all("td")
+        if cells[2].text == "P":
+            required.append(row.find_all("th")[0].text)
+    return required
+
+
+def download_specializations():
+    page = urlopen("https://www.fit.vut.cz/study/program/7887/.cs")
+    html = page.read().decode("utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    main = soup.find("main")
+
+    specializations = []
+    spec_rows = main.find("div", {"class": "table-responsive__holder"}).find("tbody").find_all("tr")
+    for row in spec_rows:
+        cells = row.find_all("td")
+
+        spec = Spec()
+        spec.link = cells[0].find("a")["href"]
+        spec.name = cells[0].text
+        spec.abbrv = cells[1].text
+        specializations.append(spec)
+
+    for spec in specializations:
+        print("Downloading:", spec.abbrv)
+        page = urlopen(spec.link)
+        html = page.read().decode("utf-8")
+        soup = BeautifulSoup(html, "html.parser")
+
+        spec.garant = soup.find("div", text=lambda
+            t: t and "Garant" in t).parent.find_next_sibling("div").find(
+            "a").text.strip()
+
+        tables = soup.find("div", {"class": "table-responsive__holder"}).findChildren("table")
+        for x in range(4):
+            courses = get_all_required(tables[x].find("tbody").find_all("tr"))
+            spec.req.append(courses)
+            spec.req_all.update(courses)
+        for x in range(2):
+            courses = get_all_required(tables[4+x].find("tbody").find_all("tr"))
+            spec.req_any.append(courses)
+            spec.req_all.update(courses)
+
+    return specializations
+
+
+def print_color_credits(total_credits, hint=""):
+    if total_credits < 120:
+        print(f"{bcolors.RED}{hint}{total_credits}{bcolors.ENDC}", end="")
+    else:
+        print(f"{bcolors.GREEN}{hint}{total_credits}{bcolors.ENDC}", end="")
+    print("/120 cr.")
 
 
 if __name__ == "__main__":
