@@ -108,12 +108,6 @@ def download_specializations():
         spec.abbrv = cells[1].text
         specializations.append(spec)
 
-    # with open("links.pkl", "wb") as f:
-    #     pickle.dump(specializations, f)
-    #
-    # with open("links.pkl", "rb") as f:
-    #     specializations = pickle.load(f)
-
     for spec in specializations:
         print(spec.abbrv)
         page = urlopen(spec.link)
