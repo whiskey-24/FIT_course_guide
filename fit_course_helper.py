@@ -228,7 +228,7 @@ class FITCourseGuide:
                   f"{os.linesep if detail else ''}")
 
         if cesa != 0:
-            print(f"CESA: {cesa}")
+            print(f"CESA: {cesa} cr.")
             total_credits += cesa
         print_color_credits(total_credits)
 
