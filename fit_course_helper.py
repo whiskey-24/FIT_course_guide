@@ -180,10 +180,12 @@ class FITCourseGuide:
                 sum([value for key, value in course_obj.number_of_hours.items()
                      if 'edn' in key.lower()])      # Lectures
             ]
-            detail_hours += f"{bcolors.PROJ}{hours[0]:02}/" \
-                            f"{bcolors.LAB}{hours[1]:02}/" \
-                            f"{bcolors.LECT}{hours[2]:02}" \
-                            f"{bcolors.WHITE}   "
+            curr_hours = f"{bcolors.PROJ}{hours[0]:02}/" \
+                         f"{bcolors.LAB}{hours[1]:02}/" \
+                         f"{bcolors.LECT}{hours[2]:02}" \
+                         f"{bcolors.WHITE}"
+            curr_hours = curr_hours.ljust(46)
+            detail_hours += curr_hours
 
             points = [
                 sum([value for key, value in course_obj.points_dist.items()
