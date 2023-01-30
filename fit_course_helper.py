@@ -44,6 +44,14 @@ class bcolors:
     RED = "\033[31m"
     GREEN = "\033[32m"
     WHITE = "\033[00m"
+    CYAN = "\033[36m"
+    MAGENTA = "\033[35m"
+    PROJ = "\033[38;5;80m"
+    TEST = "\033[38;5;162m"
+    FINALS = "\033[38;5;160m"
+    LECT = "\033[38;5;38m"
+    LAB = "\033[38;5;38m"
+    EMPTY = "\033["
 
 
 class FITCourseGuide:
@@ -88,12 +96,12 @@ class FITCourseGuide:
         print(f"{self.selected_spec.abbrv}, {self.selected_spec.name}\n"
               f"{self.selected_spec.garant}\n\n"
               f"Only required courses:")
-        self.print_semesters(spec_required)
+        self.print_semesters(spec_required, False)
 
         for idx, sem in enumerate(spec_required):
             sem.extend(selected_courses[idx])
         print("\nWith selected courses:")
-        self.print_semesters(spec_required)
+        self.print_semesters(spec_required, True)
 
         if legend:
             print("\nLegend\nRequired:")
@@ -139,25 +147,69 @@ class FITCourseGuide:
         with open("matrix.csv", "w") as f:
             f.write(out)
 
-    def course_print_check(self, selected_courses, semester):
+    def course_print_check(self, selected_courses, semester, detail=False):
         out = ""
+        detail_points = "    : Points "
+        detail_hours = "    : Hours  "
+        # Points: proj/testy polsem/zk
+        # Hours:  proj/lab a cvic/pred
         for course in selected_courses:
-            if self.courses_dict[course].semester != semester:
+            course_obj = self.courses_dict[course]
+            if course_obj.semester != semester:
                 return f"{bcolors.FAIL}Course {course} in wrong semester " \
                        f"(W/S){bcolors.ENDC}"
             curr = ""
             if course in self.selected_spec.req_all:
                 curr += f"{bcolors.WARNING}"
             else:
-                curr += f"{bcolors.WHITE}"
+                curr += f"{bcolors.MAGENTA}"
             curr += f"{course}{bcolors.OKBLUE}" \
                     f"({self.courses_dict[course].finals})" \
                     f"{bcolors.ENDC}, "
             curr = curr.ljust(25)
             out += curr
-        return out
 
-    def print_semesters(self, selected_courses):
+            if not detail:
+                continue
+
+            hours = [
+                sum([value for key, value in course_obj.number_of_hours.items()
+                     if 'ojekty' in key.lower()]),  # Projects
+                sum([value for key, value in course_obj.number_of_hours.items()
+                     if 'abor' in key.lower() or 'cvi' in key.lower()]),  # Lab
+                sum([value for key, value in course_obj.number_of_hours.items()
+                     if 'edn' in key.lower()])      # Lectures
+            ]
+            detail_hours += f"{bcolors.PROJ}{hours[0]:02}/" \
+                            f"{bcolors.LAB}{hours[1]:02}/" \
+                            f"{bcolors.LECT}{hours[2]:02}" \
+                            f"{bcolors.WHITE}   "
+
+            points = [
+                sum([value for key, value in course_obj.points_dist.items()
+                     if 'ojekt' in key.lower()]),  # Projects
+                sum([value for key, value in course_obj.points_dist.items()
+                     if 'test' in key.lower()]),   # Tests
+                sum([value for key, value in course_obj.points_dist.items()
+                     if 'zkou' in key.lower()])    # Finals
+            ]
+            if max(points) == 100:
+                detail_points += f"{bcolors.PROJ}{points[0]}/" \
+                                 f"{bcolors.TEST}{points[1]}/" \
+                                 f"{bcolors.FINALS}{points[2]}" \
+                                 f"{bcolors.WHITE}    "
+            else:
+                detail_points += f"{bcolors.PROJ}{points[0]:02}/" \
+                                 f"{bcolors.TEST}{points[1]:02}/" \
+                                 f"{bcolors.FINALS}{points[2]:02}" \
+                                 f"{bcolors.WHITE}   "
+
+        if detail:
+            return f"{out}\n{detail_points}\n{detail_hours}"
+        else:
+            return out
+
+    def print_semesters(self, selected_courses, detail):
         total_credits = 0
         all_selected = set()
         for x in range(4):
@@ -171,9 +223,9 @@ class FITCourseGuide:
             total_credits += sem_credits
 
             all_selected.update(selected_courses[x])
-
             print(f"{x // 2 + 1}. {idf}: {sem_credits:02} cr. "
-                  f"{self.course_print_check(selected_courses[x], idf)}")
+                  f"{self.course_print_check(selected_courses[x], idf, detail)}"
+                  f"{os.linesep if detail else ''}")
 
         print_color_credits(total_credits)
 
@@ -198,6 +250,14 @@ class FITCourseGuide:
 
             sum_rem = winter_sum_rem + summer_sum_rem
             print_color_credits(sum_rem + total_credits, f"({sum_rem}+{total_credits})")
+        if detail:
+            print("Color Legend:")
+            print(f"Points: {bcolors.PROJ}Projects/"
+                  f"{bcolors.TEST}Tests (half semester)/"
+                  f"{bcolors.FINALS}Finals{bcolors.WHITE}\n"
+                  f"Hours:  {bcolors.PROJ}Projects/"
+                  f"{bcolors.LAB}Labs (exercises)/"
+                  f"{bcolors.LECT}Lectures{bcolors.WHITE}")
 
 
 def download_courses():
