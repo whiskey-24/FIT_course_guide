@@ -89,7 +89,7 @@ class FITCourseGuide:
 
         self.spec_dict = {x.abbrv: x for x in self.specs}
 
-    def help_me_decide(self, spec_name, selected_courses, legend=True):
+    def help_me_decide(self, spec_name, selected_courses, cesa, legend=True):
         self.selected_spec = self.spec_dict[spec_name]
         spec_required = deepcopy(self.selected_spec.req)
 
@@ -101,7 +101,7 @@ class FITCourseGuide:
         for idx, sem in enumerate(spec_required):
             sem.extend(selected_courses[idx])
         print("\nWith selected courses:")
-        self.print_semesters(spec_required, True)
+        self.print_semesters(spec_required, True, cesa)
 
         if legend:
             print("\nLegend\nRequired:")
@@ -209,7 +209,7 @@ class FITCourseGuide:
         else:
             return out
 
-    def print_semesters(self, selected_courses, detail):
+    def print_semesters(self, selected_courses, detail, cesa=0):
         total_credits = 0
         all_selected = set()
         for x in range(4):
@@ -227,6 +227,9 @@ class FITCourseGuide:
                   f"{self.course_print_check(selected_courses[x], idf, detail)}"
                   f"{os.linesep if detail else ''}")
 
+        if cesa != 0:
+            print(f"CESA: {cesa}")
+            total_credits += cesa
         print_color_credits(total_credits)
 
         remaining = self.selected_spec.req_all - all_selected
@@ -377,5 +380,5 @@ if __name__ == "__main__":
                          [["FCE", "FITw"],
                           ["VYF", "PP1", "KNN", "ZPO", "VGE"],
                           ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN"],
-                          ["MTIa"]], False)
+                          ["MTIa"]], 0, False)
     # guide.overview_of_specs()
