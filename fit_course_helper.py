@@ -81,7 +81,7 @@ class FITCourseGuide:
 
         self.spec_dict = {x.abbrv: x for x in self.specs}
 
-    def help_me_decide(self, spec_name, selected_courses):
+    def help_me_decide(self, spec_name, selected_courses, legend=True):
         self.selected_spec = self.spec_dict[spec_name]
         spec_required = deepcopy(self.selected_spec.req)
 
@@ -94,6 +94,16 @@ class FITCourseGuide:
             sem.extend(selected_courses[idx])
         print("\nWith selected courses:")
         self.print_semesters(spec_required)
+
+        if legend:
+            print("\nLegend\nRequired:")
+            for req in self.selected_spec.req_all:
+                print(f"{req} - {self.courses_dict[req].name}")
+            print("Optional:")
+            flat_opt = [item for sublist in selected_courses for item in sublist]
+            flat_opt = set(flat_opt) - set(self.selected_spec.req_all)
+            for opt in flat_opt:
+                print(f"{opt} - {self.courses_dict[opt].name}")
 
     def overview_of_specs(self):
         for spec in self.specs:
@@ -306,6 +316,6 @@ if __name__ == "__main__":
     guide.help_me_decide("NVIZ",
                          [["FCE", "FITw"],
                           ["VYF", "PP1", "KNN", "ZPO", "VGE"],
-                          ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN", "GAL"],
-                          ["MTIa"]])
+                          ["GZN", "PGR", "POVa", "PCG", "SIN", "VIN"],
+                          ["MTIa"]], False)
     # guide.overview_of_specs()
