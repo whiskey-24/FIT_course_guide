@@ -121,7 +121,7 @@ class FITCourseGuide:
                   f"{self.selected_spec.name}{bcolors.ENDC}\n"
                   f"{self.selected_spec.garant}\n\n"
                   f"Required courses:")
-            self.print_semesters(self.selected_spec.req)
+            self.print_semesters(self.selected_spec.req, False)
 
     def generate_matrix(self):
         req_all = set()
